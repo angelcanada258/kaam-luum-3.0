@@ -1,0 +1,884 @@
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#085744" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Kaan Luum" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<title>Kaan Luum · Punto de Venta</title>
+<style>
+:root{
+  --bg:#f1f3ee; --surface:#fff; --surface-soft:#f7f8f4; --ink:#1c2420; --ink-soft:#6f7c74;
+  --line:#dfe5dc; --brand:#229b74; --brand-dark:#11664f; --brand-soft:#e4f4ee;
+  --warn:#a46510; --warn-soft:#fff3df; --danger:#a92f2f; --danger-soft:#fdeeee;
+  --info:#1d5f9b; --info-soft:#e8f1fb;
+  --radius-lg:18px; --radius-md:13px; --shadow:0 1px 2px rgba(20,30,25,.04),0 16px 34px -24px rgba(20,30,25,.28);
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:radial-gradient(circle at 85% 0%,#dff1eb 0%,rgba(223,241,235,.15) 28%,transparent 45%),var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0;letter-spacing:-.02em}
+button,input,select{font:inherit} :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.eyebrow{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-dark);font-weight:800;margin-bottom:6px}
+.hint{font-size:13px;color:var(--ink-soft);margin:5px 0 0}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+.sidebar{background:#085744;color:#eafff7;padding:24px 14px;border-right:1px solid rgba(255,255,255,.12)}
+.logo{display:flex;gap:10px;align-items:center;padding:0 8px 24px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.14)}
+.logo-mark{width:34px;height:34px;border:1px solid rgba(255,255,255,.45);border-radius:999px;display:grid;place-items:center}
+.logo h2{font-size:19px;color:white}
+.logo span{font-size:10px;letter-spacing:.15em;text-transform:uppercase;opacity:.75}
+.nav{display:flex;flex-direction:column;gap:8px}
+.nav button{color:#eafff7;padding:13px 14px;border-radius:12px;font-weight:700;font-size:13px;background:transparent;border:0;cursor:pointer;text-align:left;opacity:.78;width:100%}
+.nav button.active,.nav button:hover{opacity:1;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.nav button[hidden]{display:none}
+.nav .logout{margin-top:24px;color:#ff9e9e;opacity:1}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;padding:30px 34px 20px}
+.topbar h1{font-size:42px}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pill{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadow)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.btn-pill{border:1px solid #a5d4c4;background:#e8f6f1;color:var(--brand-dark);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer}
+.page{display:none}.page.active{display:block}
+.page-wrap{max-width:1380px;margin:0 auto;padding:0 34px 52px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 405px;gap:24px;align-items:start}
+.section-head{margin:8px 0 14px}
+.section-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.ticket-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:17px 18px 17px 24px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.ticket-card:before{content:'';position:absolute;left:0;top:15px;bottom:15px;width:5px;border-radius:5px;background:var(--accent)}
+.ticket-card.active{background:var(--accent-soft);border-color:var(--accent)}
+.code{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:900}
+.ticket-card h3{font-size:19px;margin:2px 0 4px}
+.price{font-size:13px;color:var(--ink-soft)}
+.stepper{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.stepper button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);font-size:17px;font-weight:800;cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:not-allowed}
+.qty{min-width:28px;text-align:center;font-weight:900}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:22px}
+.card h2{font-size:27px}
+.sub{color:var(--ink-soft);font-size:13px;margin-top:4px}
+.segmented{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.segmented button{padding:10px;border:1px solid var(--line);background:var(--surface-soft);border-radius:10px;font-weight:900;cursor:pointer;color:var(--ink-soft);font-size:12px}
+.segmented button.active{background:var(--brand);border-color:var(--brand);color:white}
+.field-label{display:block;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin:17px 0 8px}
+.control-field{margin-top:11px}
+.control-field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.control-field input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--surface-soft)}
+.btn-primary{width:100%;margin-top:18px;background:var(--brand);color:white;border:none;border-radius:13px;padding:16px 18px;font-weight:900;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:15px}
+.btn-primary:hover:not(:disabled){background:var(--brand-dark)}
+.btn-primary:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed}
+.btn-secondary{width:100%;margin-top:14px;background:var(--surface-soft);border:1px solid var(--line);border-radius:13px;padding:13px;font-weight:900;cursor:pointer}
+.btn-danger{background:var(--danger)}
+.cart-line{border:1px solid var(--line);border-radius:12px;padding:10px 11px;background:var(--surface-soft);margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.totals{border-top:1px solid var(--line);padding-top:14px;margin-top:12px}
+.total-row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
+.total-row.big{font-family:Georgia,serif;font-weight:900;font-size:30px;color:var(--ink)}
+.total-row.big span:last-child{color:var(--brand-dark)}
+.hint-line{font-size:12px;color:var(--danger);text-align:center;margin:8px 0 0;min-height:16px}
+.empty{border:1px dashed var(--line);border-radius:var(--radius-md);color:var(--ink-soft);text-align:center;padding:18px 10px;font-size:13px}
+.warning{background:var(--warn-soft);border:1px solid #f1cf95;color:var(--warn);border-radius:12px;padding:10px 12px;font-size:12px;margin-top:12px}
+.result-card{margin-top:14px}
+.result-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.result-total{font-family:Georgia,serif;color:var(--brand-dark);font-size:29px;font-weight:900}
+.folio-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin-top:10px;background:var(--surface-soft)}
+.folio-code{font-family:'JetBrains Mono','SF Mono',monospace;font-weight:900;color:var(--brand-dark);font-size:15px;background:var(--brand-soft);border-radius:9px;padding:6px 9px}
+.panel-action{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.small-btn{border:1px solid var(--line);background:var(--surface-soft);border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}
+.small-btn.primary{background:var(--brand);border-color:var(--brand);color:white}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;place-items:center;z-index:200;backdrop-filter:blur(4px)}
+.overlay.active{display:grid}
+.modal{background:var(--surface);padding:32px;border-radius:var(--radius-lg);width:100%;max-width:420px;box-shadow:var(--shadow)}
+.modal input,.modal select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;margin:8px 0 16px;font-size:16px}
+.modal h2{font-size:26px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow)}
+.stat-value{font-family:Georgia,serif;font-size:32px;font-weight:900;margin-top:10px}
+.mini-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:10px}
+.mini-item.col{flex-direction:column;align-items:stretch}
+.badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:900}
+.badge.ok{background:var(--brand-soft);color:var(--brand-dark)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.err{background:var(--danger-soft);color:var(--danger)}
+.scan-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px}
+.scan-input{font-size:24px;font-family:'JetBrains Mono',ui-monospace,monospace;width:100%;border:1px dashed #85c9b2;border-radius:14px;padding:20px 18px;background:#fbfffd}
+.entry-result{margin-top:16px;border-radius:14px;padding:14px;border:1px solid var(--line);background:var(--surface-soft)}
+.entry-result.ok{border-color:#99d6c2;background:var(--brand-soft)}
+.entry-result.err{border-color:#f0aaaa;background:var(--danger-soft)}
+.table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left}
+.table th{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em}
+.inventory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+.corte-box{max-width:560px;margin:0 auto}
+.corte-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.print-only{display:none}
+@media print{
+  .no-print{display:none !important}
+  body{background:white}
+  .print-only{display:block;width:72mm;margin:0 auto;font-family:'Courier New',monospace;font-size:11px;color:#000}
+  .print-header{text-align:center;margin-bottom:10px;border-bottom:1px dashed #000;padding-bottom:10px}
+  .print-header h1{font-size:16px;margin:0 0 4px;font-family:Georgia,serif}
+  .print-row{display:flex;justify-content:space-between;margin-bottom:3px}
+  .print-line{border-top:1px dashed #000;margin:8px 0}
+  .print-total{font-size:14px;font-weight:bold;margin-top:8px}
+  @page{margin:4mm}
+}
+@media(max-width:1080px){.app{grid-template-columns:1fr}.sidebar{display:none}}
+@media(max-width:720px){.topbar{padding:22px 18px}.page-wrap{padding:0 18px 40px}.ticket-grid,.stat-grid,.inventory-grid,.layout{grid-template-columns:1fr}.segmented{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="printTicket" class="print-only"></div>
+
+<div id="loginOverlay" class="overlay active">
+  <div class="modal">
+    <h2>Acceso Kaan Luum</h2>
+    <p class="eyebrow" style="margin-top:8px">Punto de Venta</p>
+    <label style="font-size:13px;font-weight:bold">Usuario</label>
+    <select id="loginUser">
+      <option value="admin">Administrador</option>
+      <option value="cajera">Cajera</option>
+    </select>
+    <label style="font-size:13px;font-weight:bold">PIN</label>
+    <input id="loginPin" type="password" placeholder="****" autocomplete="off" />
+    <p id="loginErr" style="color:var(--danger);font-size:13px;display:none">Credenciales incorrectas.</p>
+    <button class="btn-primary" onclick="doLogin()"><span>Ingresar</span><span>→</span></button>
+  </div>
+</div>
+
+<div id="shiftOverlay" class="overlay">
+  <div class="modal">
+    <h2>Apertura de Caja</h2>
+    <p class="hint" style="margin-top:8px">La caja permanece bloqueada hasta registrar el fondo inicial en efectivo.</p>
+    <label style="font-size:13px;font-weight:bold">Fondo inicial (MXN)</label>
+    <input id="fondoInput" type="number" min="0" step="1" placeholder="1000" />
+    <button class="btn-primary" onclick="abrirTurno()"><span>Abrir turno</span><span>✓</span></button>
+  </div>
+</div>
+
+<div class="app no-print">
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-mark">≋</div><div><h2>Kaan Luum</h2><span>Punto de venta</span></div></div>
+    <nav class="nav">
+      <button class="nav-btn admin-only" data-page="dashboard"><span>Panel</span></button>
+      <button class="nav-btn active" data-page="caja"><span>Caja</span></button>
+      <button class="nav-btn" data-page="entrada"><span>Entrada</span></button>
+      <button class="nav-btn admin-only" data-page="inventario"><span>Inventario</span></button>
+      <button class="nav-btn admin-only" data-page="corte"><span>Corte</span></button>
+      <button class="nav-btn admin-only" data-page="historial"><span>Historial</span></button>
+      <button class="logout" onclick="logout()">Cerrar sesión</button>
+    </nav>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div><span class="eyebrow">Laguna de Kaan Luum</span><h1 id="pageTitle">Caja</h1></div>
+      <div class="topbar-right">
+        <div class="pill"><span class="dot"></span><strong id="topAdentro">0</strong> adentro</div>
+        <div class="pill"><span id="userBadge">—</span></div>
+        <div class="pill"><strong id="turnoStatus">Turno cerrado</strong></div>
+      </div>
+    </header>
+
+    <section class="page admin-only" id="page-dashboard">
+      <div class="page-wrap">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="eyebrow">Entradas hoy</div><div class="stat-value" id="dashEntradas">0</div></div>
+          <div class="stat-card"><div class="eyebrow">Adentro</div><div class="stat-value" id="dashAdentro">0</div></div>
+          <div class="stat-card"><div class="eyebrow">Pendientes</div><div class="stat-value" id="dashPendientes">0</div></div>
+          <div class="stat-card"><div class="eyebrow">Cobrado hoy</div><div class="stat-value" id="dashCobrado">$0</div></div>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Configuración</span><h2>Tipo de cambio</h2>
+          <p class="hint">Solo el administrador puede modificar el tipo de cambio para cobros en dólares.</p>
+          <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <label style="font-weight:bold;font-size:14px">1 USD =</label>
+            <input id="usdRateInput" type="number" step="0.5" min="1" style="padding:10px;border-radius:10px;border:1px solid var(--line);width:110px" />
+            <span style="font-weight:bold">MXN</span>
+            <button class="btn-pill" onclick="updateUsdRate()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page active" id="page-caja">
+      <div class="page-wrap">
+        <main class="layout">
+          <section>
+            <div class="section-head">
+              <div class="section-row">
+                <div><span class="eyebrow">Punto de venta</span><h2>Brazaletes</h2></div>
+                <button class="btn-pill" onclick="resetCart()">Limpiar</button>
+              </div>
+              <p class="hint">Venta exclusiva de brazaletes. Cada visitante genera un folio individual.</p>
+            </div>
+            <div class="ticket-grid" id="ticketGrid"></div>
+          </section>
+          <aside>
+            <div class="card" id="cartCard">
+              <span class="eyebrow">Resumen</span><h2>Kaan Luum</h2>
+              <p class="sub" id="visitorSummary">Selecciona brazaletes.</p>
+              <div id="cartItems" style="margin:16px 0;min-height:80px"></div>
+              <div class="totals">
+                <div class="total-row big"><span>Total MXN</span><span id="cartTotal">$0</span></div>
+                <div class="total-row"><span>Equivalente USD</span><span id="cartTotalUsd">$0.00</span></div>
+              </div>
+              <span class="field-label">Método de pago</span>
+              <div class="segmented" id="paymentMethods"></div>
+              <div id="courtesyControls" hidden>
+                <div class="control-field"><label for="motivoInput">Motivo de cortesía</label><input id="motivoInput" placeholder="Ej. invitación de gerencia" /></div>
+                <div class="control-field"><label for="authInput">Autorizado por</label><input id="authInput" placeholder="Nombre del responsable" /></div>
+              </div>
+              <button class="btn-primary" id="confirmBtn" onclick="confirmSale()" disabled><span>Cobrar y generar folios</span><span id="confirmTotal">$0</span></button>
+              <p class="hint-line" id="confirmHint"></p>
+            </div>
+            <div class="card result-card" id="resultCard" hidden>
+              <div class="result-head">
+                <div><span class="eyebrow">Venta registrada</span><h2 id="resultSaleNumber">Venta #</h2><p class="sub" id="resultMeta"></p></div>
+                <div class="result-total" id="resultTotal"></div>
+              </div>
+              <div id="folioList"></div>
+              <div class="panel-action">
+                <button class="btn-secondary" onclick="resetCart()">Nueva venta</button>
+                <button class="small-btn primary" onclick="printLastTicket()">Imprimir ticket</button>
+                <button class="small-btn" onclick="showPage('entrada')">Ir a Entrada</button>
+              </div>
+            </div>
+          </aside>
+        </main>
+      </div>
+    </section>
+
+    <section class="page" id="page-entrada">
+      <div class="page-wrap">
+        <div class="layout">
+          <div class="scan-box">
+            <span class="eyebrow">Control de acceso</span><h2>Validar brazalete</h2>
+            <p class="hint" style="margin-bottom:16px">Entrada no cobra. Solo acepta folios vendidos en Caja con estado pendiente.</p>
+            <input class="scan-input" id="entryFolio" placeholder="Escanea o escribe: KL-00101" autocomplete="off" />
+            <button class="btn-primary" id="entryBtn" onclick="validateEntrada()"><span>Registrar entrada</span><span>✓</span></button>
+            <div id="entryResult" class="entry-result" hidden></div>
+          </div>
+          <div class="card">
+            <span class="eyebrow">Pendientes</span><h2>Sin entrar</h2>
+            <div id="pendingList" style="margin-top:16px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page admin-only" id="page-inventario">
+      <div class="page-wrap">
+        <div class="card">
+          <span class="eyebrow">Almacén</span><h2>Stock de brazaletes por color</h2>
+          <p class="hint">Se descuenta 1 unidad por cada brazalete vendido. Stock inicial: 700 por color.</p>
+          <div class="inventory-grid" id="inventoryList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page admin-only" id="page-corte">
+      <div class="page-wrap">
+        <div class="card corte-box">
+          <span class="eyebrow">Fin de turno</span><h2>Corte de caja</h2>
+          <div id="corteDetails" style="margin-top:16px"></div>
+          <div class="corte-actions">
+            <button class="btn-secondary" style="margin:0;flex:1" onclick="printCorte()">Imprimir resumen</button>
+            <button class="btn-primary btn-danger" style="margin:0;flex:1" onclick="cerrarTurno()">Cerrar turno</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page admin-only" id="page-historial">
+      <div class="page-wrap">
+        <div class="card">
+          <span class="eyebrow">Trazabilidad</span><h2>Historial de movimientos</h2>
+          <div style="overflow:auto"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Monto</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'kaan_luum_mvp_v2';
+const TICKETS = [
+  {id:'extranjero',code:'Rojo',name:'Extranjero',tipo:'Adulto',price:350,accent:'#d9785a',soft:'#fbeae3'},
+  {id:'nacional',code:'Rosa',name:'Nacional',tipo:'Adulto',price:250,accent:'#d98aa8',soft:'#fbeaf1'},
+  {id:'agencia',code:'Azul',name:'Agencia',tipo:'Adulto',price:200,accent:'#5e93b8',soft:'#e9f0f5'},
+  {id:'inapam',code:'Naranja',name:'INAPAM',tipo:'Adulto',price:150,accent:'#e0a25a',soft:'#faf0e2'},
+  {id:'local',code:'Verde',name:'Local / Tulumense',tipo:'Local',price:150,accent:'#6fa888',soft:'#e8f2ed'},
+  {id:'nino',code:'Amarillo',name:'Niño',tipo:'Niño',price:150,accent:'#d6c25a',soft:'#f9f5e0'},
+  {id:'cortesia',code:'Blanco',name:'Cortesía',tipo:'Adulto',price:0,accent:'#aeb7ad',soft:'#f2f3f0'}
+];
+const PAYMENTS = [
+  {id:'efectivo',label:'Efectivo'},
+  {id:'visa',label:'Visa'},
+  {id:'mastercard',label:'Mastercard'},
+  {id:'credito',label:'Crédito'},
+  {id:'dolar',label:'Dólar'},
+  {id:'transferencia',label:'Transferencia'},
+  {id:'cortesia',label:'Cortesía'}
+];
+const USERS = { admin: '1234', cajera: '0000' };
+
+function braceletInventory() {
+  return TICKETS.reduce((acc, t) => {
+    acc[t.code] = { total: 700, occupied: 0 };
+    return acc;
+  }, {});
+}
+
+function emptyDB() {
+  return {
+    config: { aforoMax: 50, folioCounter: 100, saleCounter: 10, turnoId: 1, tipoCambioUsd: 18, fondoCaja: 0 },
+    auth: { currentUser: null },
+    shift: { isOpen: false, openedAt: null, fund: 0, operator: null },
+    brazaletes: [],
+    ventas: [],
+    movimientos: [],
+    inventory: braceletInventory()
+  };
+}
+
+function migrateState(state) {
+  if (!state || typeof state !== 'object') return emptyDB();
+  state.config = state.config || {};
+  state.config.tipoCambioUsd = state.config.tipoCambioUsd || state.config.usdRate || 18;
+  state.config.fondoCaja = state.config.fondoCaja ?? state.shift?.fund ?? 0;
+  state.auth = state.auth || { currentUser: null };
+  state.shift = state.shift || { isOpen: false, openedAt: null, fund: 0, operator: null };
+  state.brazaletes = state.brazaletes || [];
+  state.ventas = state.ventas || [];
+  state.movimientos = state.movimientos || [];
+
+  const hasBracelets = state.inventory && TICKETS.some(t => state.inventory[t.code]);
+  if (!hasBracelets) {
+    state.inventory = braceletInventory();
+    state.brazaletes.forEach(b => {
+      if (state.inventory[b.color]) state.inventory[b.color].occupied += 1;
+    });
+  } else {
+    TICKETS.forEach(t => {
+      if (!state.inventory[t.code]) state.inventory[t.code] = { total: 700, occupied: 0 };
+      if (!state.inventory[t.code].total) state.inventory[t.code].total = 700;
+    });
+  }
+  return state;
+}
+
+let db = null;
+let cart = {};
+let paymentMethod = null;
+let lastTicket = null;
+let syncQueue = Promise.resolve();
+
+const money = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n || 0);
+const moneyUsd = n => '$' + (n || 0).toFixed(2) + ' USD';
+const now = () => Date.now();
+const todayStr = () => new Date().toDateString();
+const fmtDate = ts => new Date(ts).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+const fmtTime = ts => new Date(ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+function getDB() {
+  if (db) return db;
+  try { db = migrateState(JSON.parse(localStorage.getItem(STORAGE_KEY))); }
+  catch (e) { db = emptyDB(); }
+  return db;
+}
+
+function saveDB() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  const payload = JSON.stringify({ state: db });
+  syncQueue = syncQueue.catch(() => null).then(() =>
+    fetch('/api/mvp-state', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: payload })
+      .then(async r => { if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Error SQLite'); } })
+  ).catch(e => console.error('Error de persistencia:', e));
+}
+
+function addMovement(m) {
+  db.movimientos.push({
+    id: 'MOV-' + now() + '-' + Math.random().toString(16).slice(2, 6),
+    timestamp: now(),
+    operador: db.shift.operator || db.auth.currentUser?.user || '—',
+    turnoId: db.config.turnoId,
+    ...m
+  });
+}
+
+async function initApp() {
+  let initial = null;
+  try {
+    const response = await fetch('/api/mvp-state', { cache: 'no-store' });
+    if (response.ok) initial = migrateState((await response.json()).state);
+  } catch (e) { console.warn('SQLite no disponible, usando respaldo local.', e); }
+  if (!initial) {
+    try { initial = migrateState(JSON.parse(localStorage.getItem(STORAGE_KEY))); } catch (e) { initial = null; }
+  }
+  db = initial || emptyDB();
+  saveDB();
+
+  document.querySelectorAll('.nav-btn').forEach(b => { b.onclick = () => showPage(b.dataset.page); });
+  document.getElementById('motivoInput').oninput = updateSummary;
+  document.getElementById('authInput').oninput = updateSummary;
+  document.getElementById('entryFolio').addEventListener('keydown', e => { if (e.key === 'Enter') validateEntrada(); });
+  document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  if (!db.auth.currentUser) {
+    document.getElementById('loginOverlay').classList.add('active');
+    document.getElementById('shiftOverlay').classList.remove('active');
+    return;
+  }
+  document.getElementById('loginOverlay').classList.remove('active');
+  applyRole();
+  checkShift();
+  document.getElementById('usdRateInput').value = db.config.tipoCambioUsd;
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value;
+  const pin = document.getElementById('loginPin').value;
+  const err = document.getElementById('loginErr');
+  if (USERS[user] === pin) {
+    err.style.display = 'none';
+    db.auth.currentUser = { user, role: user === 'admin' ? 'admin' : 'cajera' };
+    document.getElementById('loginPin').value = '';
+    saveDB();
+    applyRole();
+    checkShift();
+    document.getElementById('usdRateInput').value = db.config.tipoCambioUsd;
+  } else {
+    err.style.display = 'block';
+  }
+}
+
+function logout() {
+  db.auth.currentUser = null;
+  saveDB();
+  document.getElementById('loginOverlay').classList.add('active');
+  document.getElementById('shiftOverlay').classList.remove('active');
+}
+
+function applyRole() {
+  const user = db.auth.currentUser;
+  if (!user) return;
+  const isAdmin = user.role === 'admin';
+  document.getElementById('userBadge').textContent = user.user + (isAdmin ? ' · admin' : ' · cajera');
+  document.querySelectorAll('.admin-only').forEach(el => { el.hidden = !isAdmin; });
+  if (!isAdmin && ['dashboard', 'inventario', 'corte', 'historial'].includes(getCurrentPage())) showPage('caja');
+}
+
+function getCurrentPage() {
+  const active = document.querySelector('.page.active:not([hidden])');
+  return active ? active.id.replace('page-', '') : 'caja';
+}
+
+function checkShift() {
+  if (!db.auth.currentUser) return;
+  if (!db.shift.isOpen) {
+    document.getElementById('shiftOverlay').classList.add('active');
+    document.getElementById('turnoStatus').textContent = 'Turno cerrado';
+  } else {
+    document.getElementById('shiftOverlay').classList.remove('active');
+    document.getElementById('turnoStatus').textContent = 'Turno #' + db.config.turnoId + ' · abierto';
+    refreshAll();
+  }
+}
+
+function abrirTurno() {
+  const fondo = Number(document.getElementById('fondoInput').value);
+  if (isNaN(fondo) || fondo < 0) return alert('Ingresa un fondo válido.');
+  db.shift = {
+    isOpen: true,
+    openedAt: now(),
+    fund: fondo,
+    operator: db.auth.currentUser.user
+  };
+  db.config.fondoCaja = fondo;
+  addMovement({ tipo: 'apertura_caja', concepto: 'Apertura de turno #' + db.config.turnoId, monto: fondo, metodoPago: 'efectivo' });
+  saveDB();
+  document.getElementById('fondoInput').value = '';
+  checkShift();
+}
+
+function cerrarTurno() {
+  if (!confirm('¿Cerrar el turno actual? La caja quedará bloqueada hasta una nueva apertura.')) return;
+  addMovement({ tipo: 'cierre_caja', concepto: 'Cierre de turno #' + db.config.turnoId, monto: 0, metodoPago: null });
+  db.shift = { isOpen: false, openedAt: null, fund: 0, operator: null };
+  db.config.turnoId += 1;
+  db.config.fondoCaja = 0;
+  saveDB();
+  checkShift();
+}
+
+function showPage(page) {
+  if (!db.auth.currentUser) return;
+  const isAdmin = db.auth.currentUser.role === 'admin';
+  if (!isAdmin && ['dashboard', 'inventario', 'corte', 'historial'].includes(page)) return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  const titles = { dashboard: 'Panel de control', caja: 'Caja', entrada: 'Registrar entrada', inventario: 'Inventario', corte: 'Corte de caja', historial: 'Historial' };
+  document.getElementById('pageTitle').textContent = titles[page] || 'Kaan Luum';
+  refreshAll();
+}
+
+function refreshAll() {
+  if (!db.auth.currentUser || !db.shift.isOpen) return;
+  renderTop();
+  renderTickets();
+  renderPayments();
+  updateSummary();
+  renderDashboard();
+  renderPendingList();
+  renderInventory();
+  renderCorte();
+  renderHistory();
+}
+
+function renderTop() {
+  const adentro = db.brazaletes.filter(b => b.estado === 'adentro').length;
+  document.getElementById('topAdentro').textContent = adentro;
+}
+
+function renderTickets() {
+  const grid = document.getElementById('ticketGrid');
+  grid.innerHTML = '';
+  TICKETS.forEach(t => {
+    const qty = cart[t.id] || 0;
+    const card = document.createElement('div');
+    card.className = 'ticket-card' + (qty ? ' active' : '');
+    card.style.setProperty('--accent', t.accent);
+    card.style.setProperty('--accent-soft', t.soft);
+    card.innerHTML = '<div><span class="code">' + t.code + '</span><h3>' + t.name + '</h3><span class="price">' + money(t.price) + ' · ' + t.tipo + '</span></div>' +
+      '<div class="stepper"><button ' + (qty === 0 ? 'disabled' : '') + '>−</button><span class="qty">' + qty + '</span><button>+</button></div>';
+    const [minus, plus] = card.querySelectorAll('button');
+    minus.onclick = () => changeTicket(t.id, -1);
+    plus.onclick = () => changeTicket(t.id, 1);
+    grid.appendChild(card);
+  });
+}
+
+function changeTicket(id, delta) {
+  const next = Math.max(0, (cart[id] || 0) + delta);
+  if (next === 0) delete cart[id]; else cart[id] = next;
+  renderTickets();
+  updateSummary();
+}
+
+function renderPayments() {
+  const wrap = document.getElementById('paymentMethods');
+  wrap.innerHTML = '';
+  PAYMENTS.forEach(p => {
+    const b = document.createElement('button');
+    b.textContent = p.label;
+    b.className = paymentMethod === p.id ? 'active' : '';
+    b.onclick = () => { paymentMethod = p.id; renderPayments(); updateSummary(); };
+    wrap.appendChild(b);
+  });
+}
+
+function updateUsdRate() {
+  const rate = parseFloat(document.getElementById('usdRateInput').value);
+  if (rate > 0) {
+    db.config.tipoCambioUsd = rate;
+    saveDB();
+    updateSummary();
+    alert('Tipo de cambio actualizado: 1 USD = ' + rate + ' MXN');
+  }
+}
+
+function selectedItems() {
+  return TICKETS.filter(t => cart[t.id]).map(t => ({ ...t, qty: cart[t.id], total: cart[t.id] * t.price }));
+}
+
+function updateSummary() {
+  const items = selectedItems();
+  const totalMxn = items.reduce((s, i) => s + i.total, 0);
+  const totalUsd = totalMxn / db.config.tipoCambioUsd;
+  const hasCourtesy = (cart.cortesia || 0) > 0;
+  const courtesyPayment = paymentMethod === 'cortesia';
+  const finalTotal = courtesyPayment ? 0 : totalMxn;
+  const visitors = items.reduce((s, i) => s + i.qty, 0);
+
+  document.getElementById('visitorSummary').textContent = visitors
+    ? visitors + ' folio(s) se generarán al confirmar.'
+    : 'Selecciona brazaletes.';
+
+  const cartEl = document.getElementById('cartItems');
+  cartEl.innerHTML = items.length
+    ? items.map(i => '<div class="cart-line"><div><strong>' + i.qty + '× ' + i.name + '</strong><div class="price">' + i.code + '</div></div><strong>' + money(i.total) + '</strong></div>').join('')
+    : '<div class="empty">Sin brazaletes seleccionados.</div>';
+
+  document.getElementById('cartTotal').textContent = money(finalTotal);
+  document.getElementById('cartTotalUsd').textContent = moneyUsd(totalUsd);
+  document.getElementById('confirmTotal').textContent = paymentMethod === 'dolar' ? moneyUsd(totalUsd) : money(finalTotal);
+  document.getElementById('courtesyControls').hidden = !(hasCourtesy || courtesyPayment);
+
+  const motivo = document.getElementById('motivoInput').value.trim();
+  const auth = document.getElementById('authInput').value.trim();
+  let msg = '';
+  if (!db.shift.isOpen) msg = 'Abre el turno para vender.';
+  else if (!items.length) msg = 'Selecciona al menos un brazalete.';
+  else if (!paymentMethod) msg = 'Elige un método de pago.';
+  else if (finalTotal === 0 && !hasCourtesy && !courtesyPayment) msg = 'No se puede cobrar $0.';
+  else if ((hasCourtesy || courtesyPayment) && !motivo) msg = 'Captura el motivo de cortesía.';
+  else if ((hasCourtesy || courtesyPayment) && !auth) msg = 'Captura quién autorizó la cortesía.';
+  else {
+    for (const item of items) {
+      const inv = db.inventory[item.code];
+      const needed = item.qty;
+      const available = inv ? inv.total - inv.occupied : 0;
+      if (needed > available) { msg = 'Stock insuficiente de brazaletes ' + item.code + ' (' + available + ' disp.).'; break; }
+    }
+  }
+
+  document.getElementById('confirmBtn').disabled = !!msg;
+  document.getElementById('confirmHint').textContent = msg;
+}
+
+function confirmSale() {
+  const items = selectedItems();
+  const totalMxn = items.reduce((s, i) => s + i.total, 0);
+  const courtesyPayment = paymentMethod === 'cortesia';
+  const finalTotal = courtesyPayment ? 0 : totalMxn;
+  const totalUsd = totalMxn / db.config.tipoCambioUsd;
+  const label = PAYMENTS.find(p => p.id === paymentMethod)?.label || '';
+  const motivo = document.getElementById('motivoInput').value.trim();
+  const auth = document.getElementById('authInput').value.trim();
+
+  db.config.saleCounter += 1;
+  const saleId = 'SALE-' + db.config.saleCounter;
+  const foliosGenerados = [];
+
+  items.forEach(item => {
+    for (let i = 0; i < item.qty; i++) {
+      db.config.folioCounter += 1;
+      const folio = 'KL-' + String(db.config.folioCounter).padStart(5, '0');
+      foliosGenerados.push({ folio, name: item.name, color: item.code, price: item.price });
+      db.brazaletes.push({
+        folio, ticketId: item.id, tipoVisitante: item.name, color: item.code,
+        precioEntrada: courtesyPayment ? 0 : item.price, estado: 'pendiente', ventaId: saleId,
+        extras: [], creadoEn: now(), entradaEn: null, salidaEn: null,
+        operador: db.shift.operator, turnoId: db.config.turnoId
+      });
+      if (db.inventory[item.code]) db.inventory[item.code].occupied += 1;
+      addMovement({
+        tipo: 'venta_entrada', folio, ventaId: saleId,
+        concepto: 'Brazalete ' + item.name + (courtesyPayment ? ' (cortesía)' : ''),
+        monto: courtesyPayment ? 0 : item.price,
+        metodoPago: paymentMethod,
+        montoUsd: paymentMethod === 'dolar' ? item.price / db.config.tipoCambioUsd : null
+      });
+    }
+  });
+
+  db.ventas.push({
+    id: saleId, numero: db.config.saleCounter, timestamp: now(),
+    operador: db.shift.operator, turnoId: db.config.turnoId,
+    metodoPago: paymentMethod, total: finalTotal, totalUsd: paymentMethod === 'dolar' ? totalUsd : null,
+    estado: 'registrada', folios: foliosGenerados.map(f => f.folio),
+    cortesia: courtesyPayment ? { motivo, autorizado: auth } : null
+  });
+
+  lastTicket = { saleId, folios: foliosGenerados, total: finalTotal, totalUsd, method: paymentMethod, label };
+  saveDB();
+
+  document.getElementById('resultSaleNumber').textContent = 'Venta #' + db.config.saleCounter;
+  document.getElementById('resultMeta').textContent = label + ' · ' + foliosGenerados.length + ' brazalete(s)';
+  document.getElementById('resultTotal').textContent = paymentMethod === 'dolar' ? moneyUsd(totalUsd) : money(finalTotal);
+  document.getElementById('folioList').innerHTML = foliosGenerados.map(f =>
+    '<div class="folio-card"><div style="display:flex;justify-content:space-between;gap:8px"><div><strong>' + f.name + ' · ' + f.color + '</strong></div><span class="folio-code">' + f.folio + '</span></div></div>'
+  ).join('');
+
+  document.getElementById('cartCard').hidden = true;
+  document.getElementById('resultCard').hidden = false;
+  cart = {}; paymentMethod = null;
+  document.getElementById('motivoInput').value = '';
+  document.getElementById('authInput').value = '';
+  refreshAll();
+}
+
+function resetCart() {
+  cart = {}; paymentMethod = null;
+  document.getElementById('motivoInput').value = '';
+  document.getElementById('authInput').value = '';
+  document.getElementById('cartCard').hidden = false;
+  document.getElementById('resultCard').hidden = true;
+  renderTickets();
+  renderPayments();
+  updateSummary();
+}
+
+function buildTicketHtml(data) {
+  const d = new Date().toLocaleString('es-MX');
+  const totalLine = data.method === 'dolar'
+    ? '<div class="print-row"><span>TOTAL USD:</span><span>' + moneyUsd(data.totalUsd) + '</span></div><div class="print-row"><span>Equiv. MXN:</span><span>' + money(data.total) + '</span></div>'
+    : '<div class="print-total print-row"><span>TOTAL:</span><span>' + money(data.total) + '</span></div>';
+  return '<div class="print-header"><h1>LAGUNA KAAN LUUM</h1><div>RFC: KLU850101ABC</div><div>Ejido Tulum, Quintana Roo</div><div>Tel. 984 123 4567</div><div class="print-line"></div><div>' + d + '</div><div>Venta: ' + data.saleId + '</div><div>Cajero: ' + db.shift.operator + '</div><div>Turno #' + db.config.turnoId + '</div></div>' +
+    '<div><strong>BRAZALETES</strong></div>' +
+    data.folios.map(f => '<div class="print-row"><span>' + f.folio + '</span><span>' + f.name + ' (' + f.color + ')</span></div>').join('') +
+    '<div class="print-line"></div><div class="print-row"><span>Pago:</span><span>' + data.label + '</span></div>' + totalLine +
+    '<div class="print-line"></div><div style="text-align:center;font-size:10px;margin-top:10px">Conserva este ticket.<br/>Los brazaletes no son transferibles.<br/>¡Gracias por su visita!</div>';
+}
+
+function printLastTicket() {
+  if (!lastTicket) return;
+  document.getElementById('printTicket').innerHTML = buildTicketHtml(lastTicket);
+  window.print();
+}
+
+function validateEntrada() {
+  const folio = document.getElementById('entryFolio').value.trim().toUpperCase();
+  const res = document.getElementById('entryResult');
+  res.hidden = false;
+  if (!folio) {
+    res.className = 'entry-result err';
+    res.innerHTML = '<strong>Ingresa o escanea un folio.</strong>';
+    return;
+  }
+  const b = db.brazaletes.find(x => x.folio === folio);
+  if (!b) {
+    res.className = 'entry-result err';
+    res.innerHTML = '<strong>Folio desconocido:</strong> ' + folio;
+  } else if (b.estado !== 'pendiente') {
+    res.className = 'entry-result err';
+    res.innerHTML = '<strong>Acceso rechazado.</strong> Estado: ' + b.estado;
+  } else {
+    const adentro = db.brazaletes.filter(x => x.estado === 'adentro').length;
+    if (adentro >= db.config.aforoMax) {
+      res.className = 'entry-result err';
+      res.innerHTML = '<strong>Aforo máximo alcanzado.</strong>';
+      return;
+    }
+    b.estado = 'adentro';
+    b.entradaEn = now();
+    addMovement({ tipo: 'acceso_entrada', folio: b.folio, ventaId: b.ventaId, concepto: 'Entrada · ' + b.tipoVisitante, monto: 0, metodoPago: null });
+    saveDB();
+    res.className = 'entry-result ok';
+    res.innerHTML = '<strong>Entrada autorizada</strong><div style="margin-top:6px"><span class="folio-code">' + b.folio + '</span></div><div class="hint" style="margin-top:8px">' + b.tipoVisitante + ' · Brazalete ' + b.color + '</div>';
+    document.getElementById('entryFolio').value = '';
+    refreshAll();
+  }
+}
+
+function renderPendingList() {
+  const pending = db.brazaletes.filter(b => b.estado === 'pendiente').slice().reverse().slice(0, 12);
+  document.getElementById('pendingList').innerHTML = pending.length
+    ? pending.map(b => '<div class="mini-item"><div><strong>' + b.folio + '</strong><div class="hint">' + b.tipoVisitante + ' · ' + b.color + '</div></div><button class="btn-pill" onclick="document.getElementById(\\'entryFolio\\').value=\\'' + b.folio + '\\';validateEntrada()">Ingresar</button></div>').join('')
+    : '<div class="empty">No hay brazaletes pendientes.</div>';
+}
+
+function renderDashboard() {
+  const movs = db.movimientos.filter(m => new Date(m.timestamp).toDateString() === todayStr());
+  const adentro = db.brazaletes.filter(b => b.estado === 'adentro').length;
+  const pendientes = db.brazaletes.filter(b => b.estado === 'pendiente').length;
+  const entradas = movs.filter(m => m.tipo === 'acceso_entrada').length;
+  const cobrado = movs.filter(m => m.tipo === 'venta_entrada').reduce((s, m) => s + (m.monto || 0), 0);
+  document.getElementById('dashAdentro').textContent = adentro;
+  document.getElementById('dashEntradas').textContent = entradas;
+  document.getElementById('dashPendientes').textContent = pendientes;
+  document.getElementById('dashCobrado').textContent = money(cobrado);
+}
+
+function renderInventory() {
+  document.getElementById('inventoryList').innerHTML = Object.entries(db.inventory).map(([color, data]) => {
+    const disp = data.total - data.occupied;
+    const low = disp < 50;
+    return '<div class="mini-item col"><div style="display:flex;justify-content:space-between"><strong>' + color + '</strong><span class="badge ' + (low ? 'warn' : 'ok') + '">' + disp + ' disp.</span></div><div class="hint">Vendidos: ' + data.occupied + ' de ' + data.total + '</div></div>';
+  }).join('');
+}
+
+function getShiftSales() {
+  return db.movimientos.filter(m => m.timestamp >= db.shift.openedAt && m.tipo === 'venta_entrada');
+}
+
+function renderCorte() {
+  const sales = getShiftSales();
+  const byMethod = PAYMENTS.reduce((acc, p) => { acc[p.id] = { mxn: 0, usd: 0, count: 0 }; return acc; }, {});
+  sales.forEach(m => {
+    const bucket = byMethod[m.metodoPago] || byMethod.efectivo;
+    bucket.mxn += m.monto || 0;
+    bucket.count += 1;
+    if (m.metodoPago === 'dolar' && m.montoUsd) bucket.usd += m.montoUsd;
+  });
+
+  const totalVentas = sales.reduce((s, m) => s + (m.monto || 0), 0);
+  const efectivoVentas = byMethod.efectivo.mxn;
+  const efectivoEsperado = db.shift.fund + efectivoVentas;
+
+  let methodsHtml = PAYMENTS.map(p => {
+    const b = byMethod[p.id];
+    if (!b.count) return '';
+    const amount = p.id === 'dolar'
+      ? moneyUsd(b.usd) + ' <span class="hint">(' + money(b.mxn) + ')</span>'
+      : money(b.mxn) + ' <span class="hint">(' + b.count + ')</span>';
+    return '<div class="mini-item"><span>' + p.label + '</span><strong>' + amount + '</strong></div>';
+  }).join('');
+
+  document.getElementById('corteDetails').innerHTML =
+    '<div class="mini-item"><span>Fondo inicial</span><strong>' + money(db.shift.fund) + '</strong></div>' +
+    '<div class="mini-item"><span>Operador</span><strong>' + db.shift.operator + '</strong></div>' +
+    '<div class="mini-item"><span>Apertura</span><strong>' + fmtDate(db.shift.openedAt) + '</strong></div>' +
+    '<h3 style="margin:18px 0 8px;font-size:14px">Ventas por método</h3>' +
+    (methodsHtml || '<div class="empty">Sin ventas en este turno.</div>') +
+    '<div class="mini-item" style="background:var(--brand-soft);margin-top:14px"><span>Total ventas MXN</span><strong style="color:var(--brand-dark);font-size:18px">' + money(totalVentas) + '</strong></div>' +
+    '<div class="mini-item" style="background:var(--info-soft);margin-top:8px"><span>Efectivo esperado en caja</span><strong style="color:var(--info);font-size:18px">' + money(efectivoEsperado) + '</strong></div>' +
+    '<div style="margin-top:16px"><label class="field-label" for="efectivoContado">Efectivo contado en caja</label><input id="efectivoContado" type="number" min="0" step="1" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:10px" oninput="updateCorteDiff(' + efectivoEsperado + ')" /></div>' +
+    '<div class="mini-item" id="corteDiff" style="margin-top:10px"><span>Diferencia</span><strong>—</strong></div>';
+}
+
+function updateCorteDiff(esperado) {
+  const contado = Number(document.getElementById('efectivoContado')?.value);
+  const el = document.getElementById('corteDiff');
+  if (!el || isNaN(contado)) { el.innerHTML = '<span>Diferencia</span><strong>—</strong>'; return; }
+  const diff = contado - esperado;
+  const cls = diff === 0 ? 'ok' : diff < 0 ? 'err' : 'warn';
+  const sign = diff > 0 ? '+' : '';
+  el.innerHTML = '<span>Diferencia (contado − esperado)</span><strong class="badge ' + cls + '">' + sign + money(diff) + '</strong>';
+  window._corteResumen = { esperado, contado, diff, totalVentas: getShiftSales().reduce((s, m) => s + (m.monto || 0), 0) };
+}
+
+function printCorte() {
+  const sales = getShiftSales();
+  const totalVentas = sales.reduce((s, m) => s + (m.monto || 0), 0);
+  const efectivoEsperado = db.shift.fund + sales.filter(m => m.metodoPago === 'efectivo').reduce((s, m) => s + m.monto, 0);
+  const contado = Number(document.getElementById('efectivoContado')?.value) || 0;
+  const diff = contado ? contado - efectivoEsperado : null;
+  const byMethod = {};
+  sales.forEach(m => { byMethod[m.metodoPago] = (byMethod[m.metodoPago] || 0) + (m.monto || 0); });
+
+  document.getElementById('printTicket').innerHTML =
+    '<div class="print-header"><h1>CORTE DE CAJA</h1><div>LAGUNA KAAN LUUM</div><div>' + new Date().toLocaleString('es-MX') + '</div><div>Turno #' + db.config.turnoId + ' · ' + db.shift.operator + '</div></div>' +
+    '<div class="print-row"><span>Fondo inicial:</span><span>' + money(db.shift.fund) + '</span></div>' +
+    Object.entries(byMethod).map(([k, v]) => '<div class="print-row"><span>' + (PAYMENTS.find(p => p.id === k)?.label || k) + ':</span><span>' + money(v) + '</span></div>').join('') +
+    '<div class="print-line"></div><div class="print-row"><span>Total ventas:</span><span>' + money(totalVentas) + '</span></div>' +
+    '<div class="print-row"><span>Efectivo esperado:</span><span>' + money(efectivoEsperado) + '</span></div>' +
+    (contado ? '<div class="print-row"><span>Efectivo contado:</span><span>' + money(contado) + '</span></div><div class="print-row"><span>Diferencia:</span><span>' + money(diff) + '</span></div>' : '') +
+    '<div style="text-align:center;margin-top:12px;font-size:10px">Fin de turno · Kaan Luum POS</div>';
+  window.print();
+}
+
+function renderHistory() {
+  const rows = db.movimientos.slice().reverse().slice(0, 100);
+  document.getElementById('historyRows').innerHTML = rows.length
+    ? rows.map(m => '<tr><td>' + fmtDate(m.timestamp) + '</td><td>' + m.tipo + '</td><td>' + (m.concepto || '—') + '</td><td>' + (m.metodoPago ? PAYMENTS.find(p => p.id === m.metodoPago)?.label : '—') + '</td><td>' + (m.metodoPago === 'dolar' && m.montoUsd ? moneyUsd(m.montoUsd) : money(m.monto)) + '</td></tr>').join('')
+    : '<tr><td colspan="5"><div class="empty">Sin movimientos registrados.</div></td></tr>';
+}
+
+initApp();
+</script>
+</body>
+</html>
+`;
+
+const outPath = path.join(__dirname, '..', 'public', 'index.html');
+fs.writeFileSync(outPath, htmlContent);
+console.log('Wrote', outPath);
