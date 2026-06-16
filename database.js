@@ -217,13 +217,13 @@ function createDatabase(filename = process.env.SQLITE_FILE || (process.env.VERCE
     INSERT OR IGNORE INTO tickets
       (id, nombre, tipo_visitante, precio, color_brazalete, prefijo, activo)
     VALUES
-      ('nacional', 'Nacional', 'adulto', 250, 'rosa', 'KL', 1),
-      ('extranjero', 'Extranjero', 'adulto', 350, 'rojo', 'KL', 1),
-      ('agencia', 'Agencia', 'adulto', 200, 'azul', 'KL', 1),
-      ('nino', 'Niño', 'niño', 150, 'amarillo', 'KL', 1),
-      ('local', 'Local / Tulumense', 'local', 150, 'verde', 'KL', 1),
-      ('inapam', 'INAPAM', 'adulto', 150, 'naranja', 'KL', 1),
-      ('cortesia', 'Cortesía', 'adulto', 0, 'blanco', 'KL', 1);
+      ('nacional', 'Nacional', 'adulto', 250, 'rosa', 'NCNL', 1),
+      ('extranjero', 'Extranjero', 'adulto', 350, 'rojo', 'EXT', 1),
+      ('agencia', 'Agencia', 'adulto', 200, 'azul', 'AGC', 1),
+      ('nino', 'Niño', 'niño', 150, 'amarillo', 'NINO', 1),
+      ('local', 'Local / Tulumense', 'local', 150, 'verde', 'LOCAL', 1),
+      ('inapam', 'INAPAM', 'adulto', 150, 'naranja', 'IPM', 1),
+      ('cortesia', 'Cortesía', 'adulto', 0, 'blanco', 'CRTSA', 1);
 
     INSERT OR IGNORE INTO inventario
       (id, nombre, categoria, modalidad, stock_total, stock_disponible, stock_minimo, activo)
@@ -426,14 +426,21 @@ function createPosRepository(db) {
     });
   }
 
-  function nextFolio() {
-    const current = Number(
-      db.prepare(`SELECT valor FROM configuracion WHERE clave = 'folio_actual'`).pluck().get()
-    ) || 1;
-    db.prepare(`
-      UPDATE configuracion SET valor = ? WHERE clave = 'folio_actual'
-    `).run(String(current + 1));
-    return `KL-${String(current).padStart(5, '0')}`;
+  function nextFolio(prefix = 'KL') {
+    const key = `folio_actual_${prefix}`;
+    const row = db.prepare(`SELECT valor FROM configuracion WHERE clave = ?`).get(key);
+    const globalRow = db.prepare(`SELECT valor FROM configuracion WHERE clave = 'folio_actual'`).pluck().get();
+    let current;
+    if (!row) {
+      const init = Number(globalRow) || 1;
+      current = init;
+      db.prepare(`INSERT OR REPLACE INTO configuracion(clave, valor) VALUES (?, ?)`)
+        .run(key, String(current + 1));
+    } else {
+      current = Number(row.valor) || 1;
+      db.prepare(`UPDATE configuracion SET valor = ? WHERE clave = ?`).run(String(current + 1), key);
+    }
+    return `${prefix}-${String(current).padStart(3, '0')}`;
   }
 
   function listServices() {
@@ -680,7 +687,7 @@ function createPosRepository(db) {
         const manual = group.manualFolios.length > 0;
         const folio = manual
           ? String(group.manualFolios[index] || '').trim().toUpperCase()
-          : nextFolio();
+          : nextFolio(group.ticket.prefijo || 'KL');
         if (!folio) throw domainError(400, 'El folio manual no puede estar vacío.');
         if (db.prepare('SELECT 1 FROM brazaletes WHERE folio = ?').get(folio)) {
           throw domainError(409, `El folio ${folio} ya fue vendido.`);

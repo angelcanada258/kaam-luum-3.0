@@ -59,9 +59,9 @@ test('cashier opens a shift and creates one pending wristband per visitor', asyn
   assert.deepEqual(
     sale.body.brazaletes.map(({ folio, estado }) => ({ folio, estado })),
     [
-      { folio: 'KL-00001', estado: 'pendiente' },
-      { folio: 'KL-00002', estado: 'pendiente' },
-      { folio: 'KL-00003', estado: 'pendiente' }
+      { folio: 'NCNL-001', estado: 'pendiente' },
+      { folio: 'NCNL-002', estado: 'pendiente' },
+      { folio: 'NINO-001', estado: 'pendiente' }
     ]
   );
 });
@@ -83,8 +83,10 @@ test('access rejects unknown folios and only advances sold wristbands', async ()
 
   const unknown = await request('/api/entrada', {
     method: 'POST',
-    body: JSON.stringify({ folio: 'KL-99999', operador: 'Ana' })
+    body: JSON.stringify({ folio: 'NCNL-999', operador: 'Ana' })
   });
+  // adapt expected unknown folio to new prefix scheme
+  // KL-99999 no longer used
   const entry = await request('/api/entrada', {
     method: 'POST',
     body: JSON.stringify({ folio, operador: 'Ana' })

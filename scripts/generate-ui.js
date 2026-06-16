@@ -259,7 +259,7 @@ button,input,select{font:inherit} :focus-visible{outline:2px solid var(--brand);
           <div class="scan-box">
             <span class="eyebrow">Control de acceso</span><h2>Validar brazalete</h2>
             <p class="hint" style="margin-bottom:16px">Entrada no cobra. Solo acepta folios vendidos en Caja con estado pendiente.</p>
-            <input class="scan-input" id="entryFolio" placeholder="Escanea o escribe: KL-00101" autocomplete="off" />
+            <input class="scan-input" id="entryFolio" placeholder="Escanea o escribe: NCNL-001" autocomplete="off" />
             <button class="btn-primary" id="entryBtn" onclick="validateEntrada()"><span>Registrar entrada</span><span>✓</span></button>
             <div id="entryResult" class="entry-result" hidden></div>
           </div>
@@ -308,13 +308,13 @@ button,input,select{font:inherit} :focus-visible{outline:2px solid var(--brand);
 <script>
 const STORAGE_KEY = 'kaan_luum_mvp_v2';
 const TICKETS = [
-  {id:'extranjero',code:'Rojo',name:'Extranjero',tipo:'Adulto',price:350,accent:'#d9785a',soft:'#fbeae3'},
-  {id:'nacional',code:'Rosa',name:'Nacional',tipo:'Adulto',price:250,accent:'#d98aa8',soft:'#fbeaf1'},
-  {id:'agencia',code:'Azul',name:'Agencia',tipo:'Adulto',price:200,accent:'#5e93b8',soft:'#e9f0f5'},
-  {id:'inapam',code:'Naranja',name:'INAPAM',tipo:'Adulto',price:150,accent:'#e0a25a',soft:'#faf0e2'},
-  {id:'local',code:'Verde',name:'Local / Tulumense',tipo:'Local',price:150,accent:'#6fa888',soft:'#e8f2ed'},
-  {id:'nino',code:'Amarillo',name:'Niño',tipo:'Niño',price:150,accent:'#d6c25a',soft:'#f9f5e0'},
-  {id:'cortesia',code:'Blanco',name:'Cortesía',tipo:'Adulto',price:0,accent:'#aeb7ad',soft:'#f2f3f0'}
+  {id:'extranjero',prefijo:'EXT',code:'Rojo',name:'Extranjero',tipo:'Adulto',price:350,accent:'#d9785a',soft:'#fbeae3'},
+  {id:'nacional',prefijo:'NCNL',code:'Rosa',name:'Nacional',tipo:'Adulto',price:250,accent:'#d98aa8',soft:'#fbeaf1'},
+  {id:'agencia',prefijo:'AGC',code:'Azul',name:'Agencia',tipo:'Adulto',price:200,accent:'#5e93b8',soft:'#e9f0f5'},
+  {id:'inapam',prefijo:'IPM',code:'Naranja',name:'INAPAM',tipo:'Adulto',price:150,accent:'#e0a25a',soft:'#faf0e2'},
+  {id:'local',prefijo:'LOCAL',code:'Verde',name:'Local / Tulumense',tipo:'Local',price:150,accent:'#6fa888',soft:'#e8f2ed'},
+  {id:'nino',prefijo:'NINO',code:'Amarillo',name:'Niño',tipo:'Niño',price:150,accent:'#d6c25a',soft:'#f9f5e0'},
+  {id:'cortesia',prefijo:'CRTSA',code:'Blanco',name:'Cortesía',tipo:'Adulto',price:0,accent:'#aeb7ad',soft:'#f2f3f0'}
 ];
 const PAYMENTS = [
   {id:'efectivo',label:'Efectivo'},
@@ -336,7 +336,7 @@ function braceletInventory() {
 
 function emptyDB() {
   return {
-    config: { aforoMax: 50, folioCounter: 100, saleCounter: 10, turnoId: 1, tipoCambioUsd: 18, fondoCaja: 0 },
+    config: { aforoMax: 50, folioCounters: {}, saleCounter: 10, turnoId: 1, tipoCambioUsd: 18, fondoCaja: 0 },
     auth: { currentUser: null },
     shift: { isOpen: false, openedAt: null, fund: 0, operator: null },
     brazaletes: [],
@@ -660,8 +660,12 @@ function confirmSale() {
 
   items.forEach(item => {
     for (let i = 0; i < item.qty; i++) {
-      db.config.folioCounter += 1;
-      const folio = 'KL-' + String(db.config.folioCounter).padStart(5, '0');
+      // use per-ticket prefix and 3-digit counter for demo UI
+      const prefix = (item.prefijo || (item.id || '').toUpperCase() || 'KL');
+      db.config.folioCounters = db.config.folioCounters || {};
+      const next = (Number(db.config.folioCounters[prefix]) || 0) + 1;
+      db.config.folioCounters[prefix] = next;
+      const folio = prefix + '-' + String(next).padStart(3, '0');
       foliosGenerados.push({ folio, name: item.name, color: item.code, price: item.price });
       db.brazaletes.push({
         folio, ticketId: item.id, tipoVisitante: item.name, color: item.code,
@@ -792,7 +796,9 @@ function renderInventory() {
   document.getElementById('inventoryList').innerHTML = Object.entries(db.inventory).map(([color, data]) => {
     const disp = data.total - data.occupied;
     const low = disp < 50;
-    return '<div class="mini-item col"><div style="display:flex;justify-content:space-between"><strong>' + color + '</strong><span class="badge ' + (low ? 'warn' : 'ok') + '">' + disp + ' disp.</span></div><div class="hint">Vendidos: ' + data.occupied + ' de ' + data.total + '</div></div>';
+      const ticket = TICKETS.find(t => t.code === color) || null;
+      const suffix = ticket ? ' - ' + ticket.name + ' - ' + (ticket.prefijo || ticket.id?.toUpperCase() || '') : '';
+      return '<div class="mini-item col"><div style="display:flex;justify-content:space-between"><strong>' + color + suffix + '</strong><span class="badge ' + (low ? 'warn' : 'ok') + '">' + disp + ' disp.</span></div><div class="hint">Vendidos: ' + data.occupied + ' de ' + data.total + '</div></div>';
   }).join('');
 }
 
